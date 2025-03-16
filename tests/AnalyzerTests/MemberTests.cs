@@ -22,7 +22,7 @@ using Intellenum;
 namespace Whatever;
 
 [Intellenum<Foo>]
-public partial class FooEnum
+public partial struct FooEnum
 {
     // just for the test - it's generated in real life
     // public FooEnum(string name, Foo value) { }

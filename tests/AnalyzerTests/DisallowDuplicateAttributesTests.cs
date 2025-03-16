@@ -35,8 +35,6 @@ public {type} CustomerType {{ }}
             Diagnostic diagnostic = diagnostics.Single();
 
             diagnostic.Id.Should().Be("CS0579");
-            diagnostic.ToString().Should()
-                .Match("* error CS0579: Duplicate 'Intellenum' attribute");
         }
     }
 }

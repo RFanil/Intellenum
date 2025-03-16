@@ -3,22 +3,23 @@ using System.Linq;
 using Intellenum.Generators.Snippets;
 using Intellenum.MemberBuilding;
 using Intellenum.StaticConstructorBuilding;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Intellenum.Generators;
 
 public class ClassGenerator
 {
-    public static string BuildClass(VoWorkItem item, TypeDeclarationSyntax tds, bool isNetFramework)
+    public static string BuildType(VoWorkItem item, TypeDeclarationSyntax tds, bool isNetFramework)
     {
         bool valueCanBeReadonly = item.MemberProperties.ValidMembers.All(m => m.WasExplicitlySetAValue && m.WasExplicitlySetAName);
         string @readonly = valueCanBeReadonly ? "readonly" : "";
         
-        var className = tds.Identifier;
+        var typeName = tds.Identifier;
 
         List<string> interfaces = new(3)
         {
-            $"global::System.IEquatable<{className}>"
+            $"global::System.IEquatable<{typeName}>"
         };
         
         if (item.IsUnderlyingIComparable)
@@ -28,9 +29,12 @@ public class ClassGenerator
         
         if (item.IsUnderlyingIsIComparableOfT)
         {
-            interfaces.Add($"global::System.IComparable<{className}>");
+            interfaces.Add($"global::System.IComparable<{typeName}>");
         }
 
+        // Determine if the type is a class or struct
+        bool isStruct = tds.Kind() == SyntaxKind.StructDeclaration;
+        string typeKeyword = isStruct ? "struct" : "class";
         string itemUnderlyingType = item.UnderlyingTypeFullName;
 
         return
@@ -44,8 +48,8 @@ public class ClassGenerator
                   [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage] 
                   [global::System.CodeDom.Compiler.GeneratedCodeAttribute("{{Util.GenerateYourAssemblyName()}}", "{{Util.GenerateYourAssemblyVersion()}}")]
                   {{Util.GenerateAnyConversionAttributes(tds, item)}}
-                  {{Util.GenerateDebugAttributes(item, className, itemUnderlyingType)}}
-                  {{Util.GenerateModifiersFor(tds)}} class {{className}} : {{string.Join(",", interfaces)}} 
+                  {{Util.GenerateDebugAttributes(item, typeName, itemUnderlyingType)}}
+                  {{Util.GenerateModifiersFor(tds)}} {{typeKeyword}} {{typeName}} : {{string.Join(",", interfaces)}} 
                   {
                       {{MemberGeneration.GenerateConstValuesIfPossible(item)}}
               
@@ -67,7 +71,7 @@ public class ClassGenerator
               
                       [global::System.Diagnostics.DebuggerStepThroughAttribute]
                       [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-                      public {{className}}()
+                      public {{typeName}}()
                       {
               #if DEBUG
                           _stackTrace = new global::System.Diagnostics.StackTrace();
@@ -78,7 +82,7 @@ public class ClassGenerator
                       }
               
                       [global::System.Diagnostics.DebuggerStepThroughAttribute]
-                      public {{className}}({{itemUnderlyingType}} value)
+                      public {{typeName}}({{itemUnderlyingType}} value)
                       {
                           _value = value;
                           _name = "[INFERRED-TO-BE-REPLACED!]";
@@ -86,7 +90,7 @@ public class ClassGenerator
                       }        
               
                       [global::System.Diagnostics.DebuggerStepThroughAttribute]
-                      private {{className}}(string enumName, {{itemUnderlyingType}} value)
+                      private {{typeName}}(string enumName, {{itemUnderlyingType}} value)
                       {
                           _value = value;
                           _name = enumName;
@@ -109,7 +113,7 @@ public class ClassGenerator
               
                       // only called internally when something has been deserialized into
                       // its primitive type.
-                      private static {{className}} __Deserialize({{itemUnderlyingType}} value)
+                      private static {{typeName}} __Deserialize({{itemUnderlyingType}} value)
                       {
                           {{GenerateNullCheckIfNeeded(item)}}
               
@@ -119,7 +123,7 @@ public class ClassGenerator
                       }
               
                       [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                      public global::System.Boolean Equals({{className}} other)
+                      public global::System.Boolean Equals({{typeName}} other)
                       {
                           if (ReferenceEquals(null, other))
                           {
@@ -156,32 +160,32 @@ public class ClassGenerator
                               return false;
                           }
               
-                          return Equals(({{className}}) obj);
+                          return Equals(({{typeName}}) obj);
                       }
               
                       [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                      public static global::System.Boolean operator ==({{className}} left, {{className}} right) => Equals(left, right);
+                      public static global::System.Boolean operator ==({{typeName}} left, {{typeName}} right) => Equals(left, right);
               
                       [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                      public static global::System.Boolean operator !=({{className}} left, {{className}} right) => !Equals(left, right);
+                      public static global::System.Boolean operator !=({{typeName}} left, {{typeName}} right) => !Equals(left, right);
               
                       [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                      public static global::System.Boolean operator ==({{className}} left, {{itemUnderlyingType}} right) => Equals(left.Value, right);
+                      public static global::System.Boolean operator ==({{typeName}} left, {{itemUnderlyingType}} right) => Equals(left.Value, right);
               
                       [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                      public static global::System.Boolean operator !=({{className}} left, {{itemUnderlyingType}} right) => !Equals(left.Value, right);
+                      public static global::System.Boolean operator !=({{typeName}} left, {{itemUnderlyingType}} right) => !Equals(left.Value, right);
               
                       [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                      public static global::System.Boolean operator ==({{itemUnderlyingType}} left, {{className}} right) => Equals(left, right.Value);
+                      public static global::System.Boolean operator ==({{itemUnderlyingType}} left, {{typeName}} right) => Equals(left, right.Value);
               
                       [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                      public static global::System.Boolean operator !=({{itemUnderlyingType}} left, {{className}} right) => !Equals(left, right.Value);
+                      public static global::System.Boolean operator !=({{itemUnderlyingType}} left, {{typeName}} right) => !Equals(left, right.Value);
                       
                       [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                      public static explicit operator {{className}}({{itemUnderlyingType}} value) => FromValue(value);
+                      public static explicit operator {{typeName}}({{itemUnderlyingType}} value) => FromValue(value);
               
                       [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                      public static implicit operator {{itemUnderlyingType}}({{className}} value) => value.Value;
+                      public static implicit operator {{itemUnderlyingType}}({{typeName}} value) => value.Value;
               
                       {{Util.GenerateIComparableImplementationIfNeeded(item, tds)}}
               
@@ -190,7 +194,7 @@ public class ClassGenerator
               
                       {{MemberGeneration.GenerateAnyMembers(tds, item)}}
                       
-                      public static global::System.Collections.Generic.IEnumerable<{{className}}> List()
+                      public static global::System.Collections.Generic.IEnumerable<{{typeName}}> List()
                       {
                           {{MemberGeneration.GenerateIEnumerableYields(item)}}
                       }        
